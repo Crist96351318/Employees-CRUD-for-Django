@@ -18,6 +18,9 @@ A simple CRUD-based system for managing company records, departments, and projec
 * Django REST Framework
 
 ## Screenshots
+![9f4dcfac-c342-4c9b-8ac9-362e3b71fb5e](https://github.com/user-attachments/assets/cdb8fa88-6576-4d8f-b20e-500544a0a6d0)
+![ec20cac4-9c1b-42ac-bc35-54fa35a6370b](https://github.com/user-attachments/assets/14dedca6-e5d3-4764-aade-2bbee6fbc17d)
+![b7e70270-2713-48cb-a21f-ae21aba0e289](https://github.com/user-attachments/assets/98fbe9d1-4367-4d1e-911a-1c48b781781e)
 
 
 
