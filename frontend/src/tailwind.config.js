@@ -2,11 +2,12 @@
 module.exports = {
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
+    "./public/index.html",
   ],
   theme: {
     extend: {
       colors: {
-        navy: '#435d7d', 
+        primary: '#4f46e5', // Modern Indigo
       }
     },
   },

@@ -1,21 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Employee, 
-  getEmployees, 
-  createEmployee, 
-  deleteEmployee, 
-  axiosInstance 
-} from '../api';
+import { api } from '../api';
 
 const EmployeeList: React.FC = () => {
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
   const [formData, setFormData] = useState({ employee_name: '', employee_position: '' });
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const fetchEmployees = async () => {
     try {
-      const data = await getEmployees();
-      setEmployees(data);
+      const res = await api.employees.get();
+      setEmployees(res.data);
     } catch (err) {
       console.error('Failed to fetch employees', err);
     }
@@ -31,15 +25,13 @@ const EmployeeList: React.FC = () => {
       alert("Please select a position.");
       return;
     }
-
     try {
       if (editingId) {
-        await axiosInstance.put(`employees/${editingId}/`, formData);
+        await api.employees.update(editingId, formData);
         setEditingId(null);
       } else {
-        await createEmployee(formData);
+        await api.employees.create(formData);
       }
-      
       setFormData({ employee_name: '', employee_position: '' });
       fetchEmployees();
     } catch (err) {
@@ -47,7 +39,7 @@ const EmployeeList: React.FC = () => {
     }
   };
 
-  const handleEdit = (emp: Employee) => {
+  const handleEdit = (emp: any) => {
     setEditingId(emp.id);
     setFormData({ 
       employee_name: emp.employee_name, 
@@ -63,7 +55,7 @@ const EmployeeList: React.FC = () => {
   const handleDelete = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this employee?')) {
       try {
-        await deleteEmployee(id);
+        await api.employees.delete(id);
         fetchEmployees();
       } catch (err) {
         console.error('Failed to delete employee', err);

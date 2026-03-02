@@ -1,53 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { Department, Employee, getDepartments, getEmployees, axiosInstance } from '../api';
+import { api } from '../api';
 
 const DepartmentList: React.FC = () => {
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [employees, setEmployees] = useState<any[]>([]);
   const [formData, setFormData] = useState({ department_name: '', employee: 0 });
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const fetchData = async () => {
     try {
-      const [deptData, empData] = await Promise.all([getDepartments(), getEmployees()]);
-      setDepartments(deptData);
-      setEmployees(empData);
-    } catch (err) {
-      console.error('Failed to fetch data', err);
-    }
+      const [deptRes, empRes] = await Promise.all([api.departments.get(), api.employees.get()]);
+      setDepartments(deptRes.data); setEmployees(empRes.data);
+    } catch (err) { console.error('Failed to fetch data', err); }
   };
 
-  useEffect(() => { 
-    fetchData(); 
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.employee === 0) {
-      alert("Please select a Department Head.");
-      return;
-    }
-
+    if (formData.employee === 0) return alert("Please select a Department Head.");
     try {
       if (editingId) {
-        await axiosInstance.put(`departments/${editingId}/`, formData);
+        await api.departments.update(editingId, formData);
         setEditingId(null);
       } else {
-        await axiosInstance.post('departments/', formData);
+        await api.departments.create(formData);
       }
       setFormData({ department_name: '', employee: 0 });
       fetchData();
-    } catch (err) {
-      console.error('Failed to save department', err);
-    }
+    } catch (err) { console.error('Failed to save department', err); }
   };
 
-  const handleEdit = (dept: Department) => {
+  const handleEdit = (dept: any) => {
     setEditingId(dept.id);
-    setFormData({
-      department_name: dept.department_name,
-      employee: dept.employee
-    });
+    setFormData({ department_name: dept.department_name, employee: dept.employee });
   };
 
   const handleCancelEdit = () => {
@@ -56,93 +42,89 @@ const DepartmentList: React.FC = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this department?')) {
+    if (window.confirm('Delete this department?')) {
       try {
-        await axiosInstance.delete(`departments/${id}/`);
-        fetchData();
-      } catch (err) {
-        console.error('Failed to delete department', err);
-      }
+        await api.departments.delete(id); fetchData();
+      } catch (err) { console.error('Failed to delete', err); }
     }
   };
 
   const getEmployeeName = (id: number) => {
-    const emp = employees.find(e => e.id === id);
-    return emp ? emp.employee_name : 'Unknown';
+    return employees.find(e => e.id === id)?.employee_name || 'Unknown';
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">Departments</h2>
+    <div className="pl-4">
+      <div className="mb-6 border-b border-gray-100 pb-4">
+        <h2 className="text-xl font-semibold text-gray-900">Departments</h2>
+        <p className="text-sm text-gray-500">Manage organizational structures and heads.</p>
+      </div>
       
-      <form onSubmit={handleSubmit} className="mb-6 flex gap-3 items-center flex-wrap">
-        <input 
-          className="border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Department Name"
-          value={formData.department_name}
-          onChange={e => setFormData({...formData, department_name: e.target.value})}
-          required
-        />
+      {/* Grid Layout Form like the 2nd picture */}
+      <form onSubmit={handleSubmit} className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-6 rounded-xl border border-gray-100">
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Department Name</label>
+            <input 
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+              value={formData.department_name}
+              onChange={e => setFormData({...formData, department_name: e.target.value})}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Department Head</label>
+            <select 
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm bg-white"
+              value={formData.employee}
+              onChange={e => setFormData({...formData, employee: parseInt(e.target.value)})}
+              required
+            >
+              <option value={0} disabled>Select a leader</option>
+              {/* Preserved filter logic */}
+              {employees.filter(emp => emp.employee_position === 'Department Head').map(emp => (
+                <option key={emp.id} value={emp.id}>{emp.employee_name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Removed assign workers field */}
         
-        <select 
-          className="border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-          value={formData.employee}
-          onChange={e => setFormData({...formData, employee: parseInt(e.target.value)})}
-          required
-        >
-          <option value={0} disabled>Select Dept Head</option>
-          {employees
-            .filter(emp => emp.employee_position === 'Department Head')
-            .map(emp => (
-              <option key={emp.id} value={emp.id}>{emp.employee_name}</option>
-            ))}
-        </select>
-        
-        <button 
-          type="submit" 
-          className={`px-4 py-2 rounded text-white font-semibold transition-colors ${
-            editingId ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-600 hover:bg-blue-700'
-          }`}
-        >
-          {editingId ? 'Update' : 'Add'}
-        </button>
-        
-        {editingId && (
-          <button 
-            type="button" 
-            onClick={handleCancelEdit} 
-            className="px-4 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded font-semibold transition-colors"
-          >
-            Cancel
+        <div className="md:col-span-2 flex gap-3 pt-2">
+          <button type="submit" className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg shadow transition-colors">
+            {editingId ? 'Update Department' : 'Create Department'}
           </button>
-        )}
+          {editingId && (
+            <button type="button" onClick={handleCancelEdit} className="px-6 py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-semibold rounded-lg shadow-sm transition-colors">
+              Cancel
+            </button>
+          )}
+        </div>
       </form>
 
-      <div className="overflow-hidden border border-gray-200 rounded-lg shadow-sm">
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-gray-100 border-b border-gray-200">
+      <div className="overflow-hidden ring-1 ring-gray-200 rounded-lg shadow-sm">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
             <tr>
-              <th className="p-3 text-sm font-semibold text-gray-700">Department Name</th>
-              <th className="p-3 text-sm font-semibold text-gray-700">Department Head</th>
-              <th className="p-3 text-sm font-semibold text-gray-700 text-center">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Head</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
-          <tbody>
-            {departments.map((dept, index) => (
-              <tr key={dept.id} className={`border-b border-gray-100 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                <td className="p-3 text-sm text-gray-900">{dept.department_name}</td>
-                <td className="p-3 text-sm text-gray-600">{getEmployeeName(dept.employee)}</td>
-                <td className="p-3 text-sm text-center space-x-3">
-                  <button onClick={() => handleEdit(dept)} className="text-blue-600 hover:text-blue-800 font-medium">Edit</button>
-                  <button onClick={() => handleDelete(dept.id)} className="text-red-600 hover:text-red-800 font-medium">Delete</button>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {departments.map((dept) => (
+              <tr key={dept.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{dept.department_name}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{getEmployeeName(dept.employee)}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button onClick={() => handleEdit(dept)} className="text-indigo-600 hover:text-indigo-900 mr-4">Edit</button>
+                  <button onClick={() => handleDelete(dept.id)} className="text-red-600 hover:text-red-900">Delete</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {departments.length === 0 && (
-          <div className="p-4 text-center text-gray-500 text-sm">No departments found. Add one above!</div>
-        )}
       </div>
     </div>
   );
