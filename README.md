@@ -31,7 +31,8 @@ Follow these steps to set up the project locally.
 ### 1. Create and Activate Virtual Environment
 ```bash
 python -m venv venv
-source venv/bin/activate
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+.\venv\Scripts\Activate.ps1
 
 ```
 
@@ -53,6 +54,7 @@ python manage.py migrate
 ### 4. Run the Server
 
 ```bash
+python -m pip install django-cors-headers
 python manage.py runserver
 
 ```
